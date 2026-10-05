@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Komatál</title>
+<style>
+:root{--bg:#fbf6ef;--card:#fff;--ink:#2b2420;--mute:#7a6d63;--accent:#c8553d;--accent2:#f2dcd3;--ok:#4f7f52;--line:#eadfd2}
+@media(prefers-color-scheme:dark){:root{--bg:#1d1916;--card:#282320;--ink:#f3ebe3;--mute:#a89a8d;--accent:#e27a62;--accent2:#43302a;--ok:#86b889;--line:#3a322d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,sans-serif}
+#app{max-width:480px;margin:0 auto;padding:16px 16px 96px}
+h1{font-size:26px;margin:8px 0 4px}h2{font-size:19px;margin:20px 0 8px}
+p{margin:6px 0}.mute{color:var(--mute);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+label{display:block;font-size:14px;color:var(--mute);margin:12px 0 4px}
+input,textarea,select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
+button{font:inherit;border:0;border-radius:12px;padding:13px 16px;background:var(--accent);color:#fff;width:100%;margin-top:14px;cursor:pointer}
+button.ghost{background:var(--accent2);color:var(--ink)}
+button.small{width:auto;padding:8px 12px;margin:0;font-size:14px}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.day{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.day:last-child{border:0}.dn{min-width:46px;text-align:center;font-weight:600}
+.dn small{display:block;font-weight:400;color:var(--mute);font-size:12px}
+.pill{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--accent2)}
+.pill.ok{background:#dcebdc;color:#2e5a31}
+.lock{font-size:13px;color:var(--mute)}
+.badge{display:inline-block;background:var(--accent2);padding:4px 10px;border-radius:99px;font-size:13px;margin-bottom:6px}
+.bar{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center}
+.bar div{max-width:480px;width:100%;display:flex}
+.bar a{flex:1;text-align:center;padding:12px 4px;font-size:13px;color:var(--mute);cursor:pointer}
+.bar a.on{color:var(--accent);font-weight:600}
+.linkbox{display:flex;gap:8px}.linkbox input{font-size:13px}
+.toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;font-size:14px;z-index:9}
+.demo{background:var(--accent2);border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:8px}
+.demo a{color:var(--accent);cursor:pointer;text-decoration:underline}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// Clickable mockup: no backend, no real encryption, state lives in memory.
+const days = Array.from({length:12},(_,i)=>({n:i+1,who:null,dish:''}));
+days[1]={n:2,who:'Kata',dish:'Húsleves'};days[4]={n:5,who:'Péter',dish:'Töltött káposzta'};
+const S={view:'landing',role:'organiser',waiting:true,pw:'körte-szél-hold-asztal',
+  fam:{name:'Kovács család',due:'2026-11-12',allergy:'Dió, tej nélkül',window:'17:00–19:00',addr:'Budapest, Fő utca 1.'},
+  updates:[],claim:null};
+const $=s=>document.querySelector(s);
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
+function go(v,role){S.view=v;if(role)S.role=role;render();scrollTo(0,0)}
+function dayLabel(n){if(S.waiting)return'Nap '+n;const d=new Date(S.born||Date.now());d.setDate(d.getDate()+n);return d.toLocaleDateString('hu-HU',{month:'short',day:'numeric'})}
+const demo=`<div class="demo">Demó nézet: <a onclick="go('landing')">Kezdő</a> · <a onclick="go('organiser','organiser')">Szervező</a> · <a onclick="go('helper','helper')">Segítő</a></div>`;
+function nav(){return `<div class="bar"><div>
+<a class="${S.view==='organiser'||S.view==='helper'?'on':''}" onclick="go('${S.role}')">Naptár</a>
+<a class="${S.view==='updates'?'on':''}" onclick="go('updates')">Hírek</a>
+<a class="${S.view==='share'?'on':''}" onclick="go('share')" style="${S.role==='helper'?'display:none':''}">Meghívó</a></div></div>`}
+function daysHtml(interactive){return days.map(d=>`<div class="day"><div class="dn">${d.n}.<small>${dayLabel(d.n)}</small></div>
+<div style="flex:1">${d.who?`<b>${d.who}</b><div class="mute">${d.dish}</div>`:'<span class="mute">Szabad nap</span>'}</div>
+${d.who?'<span class="pill ok">foglalt</span>':(interactive?`<button class="small" onclick="claim(${d.n})">Vállalom</button>`:'<span class="pill">szabad</span>')}</div>`).join('')}
+function claim(n){S.claim=n;go('claim')}
+const V={
+landing(){return `<h1>🍲 Komatál</h1><p>Szervezz komatált percek alatt: egy link, nincs csoport, nincs táblázat.</p>
+<div class="card"><b>Hogyan működik?</b><p class="mute">1. Létrehozod a komatált és megosztod a linket.<br>2. A barátok napot és ételt választanak, regisztráció nélkül.<br>3. Amikor megszületik a baba, egy gombnyomással indul a 12 nap.</p></div>
+<button onclick="go('create')">Új komatál létrehozása</button>
+<button class="ghost" onclick="go('helper','helper')">Meghívót kaptam (segítő nézet)</button>`},
+create(){return `<h1>Új komatál</h1><p class="mute">Az adatokat a telefonod titkosítja, a szerver nem látja.</p>
+<label>Család neve</label><input id="f1" value="${S.fam.name}">
+<label>Várható születés</label><input id="f2" type="date" value="${S.fam.due}">
+<label>Cím (csak foglalás után látják)</label><input id="f3" value="${S.fam.addr}">
+<label>Allergia, kerülendő ételek</label><textarea id="f4" rows="2">${S.fam.allergy}</textarea>
+<label>Átvételi idősáv</label><input id="f5" value="${S.fam.window}">
+<label>Napok száma</label><select><option>12</option><option>7</option><option>14</option></select>
+<button onclick="saveFam()">Létrehozás</button><button class="ghost" onclick="go('landing')">Mégse</button>`},
+share(){return `<h1>Meghívó</h1><div class="card"><span class="badge">🔒 Titkosított</span>
+<p>A jelszó a linkben utazik (a # után), így a szerver sosem kapja meg.</p>
+<div class="linkbox"><input readonly value="komatal.web.app/k/x7Qp2#${S.pw}"><button class="small" onclick="toast('Link másolva')">Másolás</button></div>
+<p class="mute">Jelszó: <b>${S.pw}</b></p></div>
+<div class="card"><b>Megosztás</b><div class="row" style="margin-top:8px"><button class="small ghost" onclick="toast('Messenger megnyitása')">Messenger</button><button class="small ghost" onclick="toast('WhatsApp megnyitása')">WhatsApp</button><button class="small ghost" onclick="toast('SMS megnyitása')">SMS</button></div></div>
+<button onclick="go('organiser')">Tovább a naptárhoz</button>`},
+organiser(){return `<h1>${S.fam.name}</h1>
+${S.waiting?`<div class="card"><span class="badge">⏳ Várakozik</span><p>Várható születés: <b>${S.fam.due}</b>. A segítők már foglalhatnak, az értesítés csak a baba érkezésekor megy ki.</p>
+<button onclick="born()">👶 Baba megszületett!</button></div>`:`<div class="card"><span class="badge">🎉 Elindult</span><p>A 12 napos komatál elindult, mindenki értesítve lett.</p></div>`}
+<h2>Napok</h2><div class="card">${daysHtml(false)}</div>
+<button class="ghost" onclick="go('share')">Újabb meghívó küldése</button>`},
+helper(){return `<h1>${S.fam.name} komatálja</h1>
+<div class="card"><span class="badge">🔒 Feloldva ezen az eszközön</span><p class="mute">Jelszó a linkből. <label style="display:inline;margin:0"><input type="checkbox" checked style="width:auto"> Megjegyezhet ez az eszköz</label></p></div>
+<div class="card"><b>Tudnivalók</b><p>Allergia: ${S.fam.allergy}<br>Idősáv: ${S.fam.window}</p></div>
+<h2>Válassz napot</h2><div class="card">${daysHtml(true)}</div>`},
+claim(){const n=S.claim;return `<h1>${n}. nap</h1><p class="mute">${dayLabel(n)} · ${S.fam.window}</p>
+<label>A neved</label><input id="c1" placeholder="pl. Anna">
+<label>Mit hozol?</label><input id="c2" placeholder="pl. Pörkölt galuskával">
+<label>Értesítés</label><select><option>Email</option><option>Böngésző értesítés</option></select>
+<p class="mute">A cím foglalás után jelenik meg. Emlékeztetőt küldünk előző nap és aznap reggel.</p>
+<button onclick="saveClaim()">Foglalás</button><button class="ghost" onclick="go('helper')">Vissza</button>`},
+updates(){return `<h1>Hírek</h1><p class="mute">A szülők írhatnak, a segítők olvassák.</p>
+${S.role==='organiser'?`<div class="card"><textarea id="u1" rows="2" placeholder="Pl. Megszületett Bence, 3300 g, látogatás csak délután."></textarea><button onclick="postUpd()">Közzététel</button></div>`:''}
+${S.updates.length?S.updates.map(u=>`<div class="card"><div class="mute">${u.t}</div>${u.x}</div>`).join(''):'<div class="card mute">Még nincs hír.</div>'}`}
+};
+function saveFam(){S.fam={name:$('#f1').value,due:$('#f2').value,addr:$('#f3').value,allergy:$('#f4').value,window:$('#f5').value};go('share','organiser')}
+function saveClaim(){const d=days[S.claim-1];d.who=$('#c1').value||'Névtelen';d.dish=$('#c2').value||'Meglepetés';toast('Foglalva!');go('helper')}
+function born(){S.waiting=false;S.born=Date.now();S.updates.unshift({t:'Most',x:'👶 Megszületett a baba! A komatál elindult.'});toast('Értesítés elküldve mindenkinek');render()}
+function postUpd(){const v=$('#u1').value.trim();if(!v)return;S.updates.unshift({t:'Most',x:v});render()}
+function render(){$('#app').innerHTML=demo+V[S.view]()+(['organiser','helper','updates','share'].includes(S.view)?nav():'')}
+render();
+</script>
+</body>
+</html>
