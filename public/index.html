@@ -44,7 +44,7 @@ const days = Array.from({length:12},(_,i)=>({n:i+1,who:null,dish:''}));
 days[1]={n:2,who:'Kata',dish:'Húsleves'};days[4]={n:5,who:'Péter',dish:'Töltött káposzta'};
 const S={view:'landing',role:'organiser',waiting:true,pw:'körte-szél-hold-asztal',
   fam:{name:'Kovács család',due:'2026-11-12',allergy:'Dió, tej nélkül',window:'17:00–19:00',addr:'Budapest, Fő utca 1.'},
-  updates:[],claim:null};
+  updates:[],claim:null,wait:[{name:'Kata',email:'kata@example.com'},{name:'Péter',email:'peter@example.com'}],joined:false};
 const $=s=>document.querySelector(s);
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
 function go(v,role){S.view=v;if(role)S.role=role;render();scrollTo(0,0)}
@@ -56,11 +56,11 @@ function nav(){return `<div class="bar"><div>
 <a class="${S.view==='share'?'on':''}" onclick="go('share')" style="${S.role==='helper'?'display:none':''}">Meghívó</a></div></div>`}
 function daysHtml(interactive){return days.map(d=>`<div class="day"><div class="dn">${d.n}.<small>${dayLabel(d.n)}</small></div>
 <div style="flex:1">${d.who?`<b>${d.who}</b><div class="mute">${d.dish}</div>`:'<span class="mute">Szabad nap</span>'}</div>
-${d.who?'<span class="pill ok">foglalt</span>':(interactive?`<button class="small" onclick="claim(${d.n})">Vállalom</button>`:'<span class="pill">szabad</span>')}</div>`).join('')}
+${d.who?'<span class="pill ok">foglalt</span>':(interactive&&!S.waiting?`<button class="small" onclick="claim(${d.n})">Vállalom</button>`:'<span class="pill">szabad</span>')}</div>`).join('')}
 function claim(n){S.claim=n;go('claim')}
 const V={
 landing(){return `<h1>🍲 Komatál</h1><p>Szervezz komatált percek alatt: egy link, nincs csoport, nincs táblázat.</p>
-<div class="card"><b>Hogyan működik?</b><p class="mute">1. Létrehozod a komatált és megosztod a linket.<br>2. A barátok napot és ételt választanak, regisztráció nélkül.<br>3. Amikor megszületik a baba, egy gombnyomással indul a 12 nap.</p></div>
+<div class="card"><b>Hogyan működik?</b><p class="mute">1. Létrehozod a komatált és megosztod a linket.<br>2. A barátok felíratkoznak a várólistára (pl. e-mail címmel), a baba érkezése előtt még nem foglalnak napot.<br>3. Amikor megszületik a baba, egy gombnyomással indul a 12 nap: mindenki értesítést kap, és ekkor választhatnak napot, mert ekkor derül ki, kinek mikor jó.</p></div>
 <button onclick="go('create')">Új komatál létrehozása</button>
 <button class="ghost" onclick="go('helper','helper')">Meghívót kaptam (segítő nézet)</button>`},
 create(){return `<h1>Új komatál</h1><p class="mute">Az adatokat a telefonod titkosítja, a szerver nem látja.</p>
@@ -80,12 +80,16 @@ share(){return `<h1>Meghívó</h1><div class="card"><span class="badge">🔒 Tit
 organiser(){return `<h1>${S.fam.name}</h1>
 ${S.waiting?`<div class="card"><span class="badge">⏳ Várakozik</span><p>Várható születés: <b>${S.fam.due}</b>. A segítők már foglalhatnak, az értesítés csak a baba érkezésekor megy ki.</p>
 <button onclick="born()">👶 Baba megszületett!</button></div>`:`<div class="card"><span class="badge">🎉 Elindult</span><p>A 12 napos komatál elindult, mindenki értesítve lett.</p></div>`}
+<h2>Várólista (${S.wait.length})</h2><div class="card">${S.wait.map(w=>`<div class="row" style="padding:6px 0"><b>${w.name}</b><span class="mute">${w.email}</span></div>`).join('')}<p class="mute">${S.waiting?'A baba érkezésekor mindenki értesítést kap.':'Mindenki értesítést kapott.'}</p></div>
 <h2>Napok</h2><div class="card">${daysHtml(false)}</div>
 <button class="ghost" onclick="go('share')">Újabb meghívó küldése</button>`},
 helper(){return `<h1>${S.fam.name} komatálja</h1>
 <div class="card"><span class="badge">🔒 Feloldva ezen az eszközön</span><p class="mute">Jelszó a linkből. <label style="display:inline;margin:0"><input type="checkbox" checked style="width:auto"> Megjegyezhet ez az eszköz</label></p></div>
 <div class="card"><b>Tudnivalók</b><p>Allergia: ${S.fam.allergy}<br>Idősáv: ${S.fam.window}</p></div>
-<h2>Válassz napot</h2><div class="card">${daysHtml(true)}</div>`},
+${S.waiting?(S.joined?`<div class="card"><span class="badge">✅ A várólistán vagy</span><p>Értesítünk, amint megszületik a baba. Akkor választhatsz napot.</p></div>`:`<div class="card"><b>Csatlakozás a várólistához</b><p class="mute">A baba érkezése előtt még nem tudni, melyik nap jó neked, ezért napot csak a születés után foglalhatsz.</p>
+<label>A neved</label><input id="w1" placeholder="pl. Anna"><label>E-mail cím (az értesítéshez)</label><input id="w2" type="email" placeholder="anna@example.com">
+<button onclick="joinWait()">Feliratkozom</button></div>`):`<div class="card"><span class="badge">🎉 Megszületett a baba</span><p>Válassz napot, amelyiken vállalni tudod.</p></div><h2>Válassz napot</h2><div class="card">${daysHtml(true)}</div>`}
+`},
 claim(){const n=S.claim;return `<h1>${n}. nap</h1><p class="mute">${dayLabel(n)} · ${S.fam.window}</p>
 <label>A neved</label><input id="c1" placeholder="pl. Anna">
 <label>Mit hozol?</label><input id="c2" placeholder="pl. Pörkölt galuskával">
@@ -98,7 +102,8 @@ ${S.updates.length?S.updates.map(u=>`<div class="card"><div class="mute">${u.t}<
 };
 function saveFam(){S.fam={name:$('#f1').value,due:$('#f2').value,addr:$('#f3').value,allergy:$('#f4').value,window:$('#f5').value};go('share','organiser')}
 function saveClaim(){const d=days[S.claim-1];d.who=$('#c1').value||'Névtelen';d.dish=$('#c2').value||'Meglepetés';toast('Foglalva!');go('helper')}
-function born(){S.waiting=false;S.born=Date.now();S.updates.unshift({t:'Most',x:'👶 Megszületett a baba! A komatál elindult.'});toast('Értesítés elküldve mindenkinek');render()}
+function joinWait(){const n=$('#w1').value.trim(),e=$('#w2').value.trim();if(!n||!e)return toast('Add meg a neved és az e-mail címed');S.wait.push({name:n,email:e});S.joined=true;toast('Felkerültél a várólistára');render()}
+function born(){S.waiting=false;S.born=Date.now();S.updates.unshift({t:'Most',x:'👶 Megszületett a baba! A komatál elindult.'});toast('Értesítés elküldve a várólistának');render()}
 function postUpd(){const v=$('#u1').value.trim();if(!v)return;S.updates.unshift({t:'Most',x:v});render()}
 function render(){$('#app').innerHTML=demo+V[S.view]()+(['organiser','helper','updates','share'].includes(S.view)?nav():'')}
 render();
