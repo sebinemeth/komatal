@@ -1,0 +1,98 @@
+rules_version = '2';
+
+// Everything personal is encrypted in the browser; these rules protect structure and roles.
+// - Helpers sign in anonymously, organisers with email and password.
+// - Only the organiser can change a komatál; helpers can join, reserve and cancel their own days.
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isEmailUser() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+    function komatal(id) {
+      return get(/databases/$(db)/documents/komatals/$(id)).data;
+    }
+    function isOrganiser(id) {
+      return isEmailUser() && komatal(id).organiserUid == request.auth.uid;
+    }
+    // Used when a komatál and its slots are created in one batch: the komatál only exists afterwards.
+    function isOrganiserAfter(id) {
+      return isEmailUser() && getAfter(/databases/$(db)/documents/komatals/$(id)).data.organiserUid == request.auth.uid;
+    }
+    function isOpen(id) {
+      return komatal(id).status != 'closed';
+    }
+    function hasJoined(id) {
+      return exists(/databases/$(db)/documents/komatals/$(id)/helpers/$(request.auth.uid));
+    }
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // Organiser vault: the server only stores ciphertext.
+    match /users/{uid}/vault/{doc} {
+      allow read, write: if isEmailUser() && request.auth.uid == uid;
+    }
+
+    match /komatals/{id} {
+      allow read: if signedIn();
+      allow create: if isEmailUser()
+        && request.resource.data.organiserUid == request.auth.uid
+        && request.resource.data.status == 'waiting';
+      allow update: if isOrganiser(id)
+        && request.resource.data.organiserUid == resource.data.organiserUid;
+      allow delete: if false;
+
+      match /slots/{n} {
+        // Closing a komatál hides every date from helpers.
+        allow read: if isOrganiser(id) || (signedIn() && isOpen(id));
+        allow create: if isOrganiserAfter(id);
+        allow delete: if isOrganiser(id);
+        allow update: if isOrganiser(id)
+          // a helper reserves a free day after the birth
+          || (signedIn() && komatal(id).status == 'active' && hasJoined(id)
+              && resource.data.status == 'free'
+              && request.resource.data.status == 'reserved'
+              && request.resource.data.reservedBy == request.auth.uid
+              && onlyChanges(['status', 'reservedBy', 'enc']))
+          // a helper gives their day back
+          || (signedIn() && isOpen(id)
+              && resource.data.reservedBy == request.auth.uid
+              && request.resource.data.status == 'free'
+              && request.resource.data.reservedBy == null
+              && onlyChanges(['status', 'reservedBy', 'enc']));
+      }
+
+      // Wait list. Contact details are sealed to the organiser's public key.
+      match /helpers/{uid} {
+        allow read: if isOrganiser(id) || (signedIn() && request.auth.uid == uid);
+        allow create, update: if signedIn() && request.auth.uid == uid && isOpen(id);
+        allow delete: if isOrganiser(id) || (signedIn() && request.auth.uid == uid);
+      }
+
+      // Notification addresses (email, push tokens): write-only for clients, read by Cloud Functions.
+      match /private/{uid} {
+        allow create, update, delete: if signedIn() && request.auth.uid == uid && isOpen(id);
+        allow read: if false;
+      }
+
+      match /posts/{pid} {
+        allow read: if signedIn();
+        allow write: if isOrganiser(id);
+
+        match /images/{n} {
+          allow read: if signedIn();
+          allow write: if isOrganiser(id);
+        }
+        match /reactions/{uid} {
+          allow read: if signedIn();
+          allow create, update: if signedIn() && request.auth.uid == uid && isOpen(id);
+          allow delete: if signedIn() && request.auth.uid == uid;
+        }
+      }
+    }
+  }
+}

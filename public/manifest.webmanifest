@@ -1,0 +1,10 @@
+{
+  "name": "Komatál",
+  "short_name": "Komatál",
+  "lang": "hu",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdf8f2",
+  "theme_color": "#d95f38",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

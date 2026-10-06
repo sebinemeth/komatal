@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+@import '@nuxt/ui';
+@import '@fontsource-variable/nunito';
+
+@theme static {
+  --font-sans: 'Nunito Variable', ui-rounded, system-ui, sans-serif;
+  --color-terracotta-50: #fdf4f0;
+  --color-terracotta-100: #fbe5db;
+  --color-terracotta-200: #f6c9b7;
+  --color-terracotta-300: #efa588;
+  --color-terracotta-400: #e57f58;
+  --color-terracotta-500: #d95f38;
+  --color-terracotta-600: #c24a29;
+  --color-terracotta-700: #a03a22;
+  --color-terracotta-800: #85321f;
+  --color-terracotta-900: #6e2d1e;
+  --color-terracotta-950: #3c140c;
+}
+
+:root {
+  --ui-radius: 0.75rem;
+}
+:root:not(.dark) {
+  --ui-bg: #fdf8f2;
+  --ui-bg-muted: #f8efe4;
+  --ui-bg-elevated: #fffdfa;
+}
+body {
+  font-family: var(--font-sans);
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  -webkit-font-smoothing: antialiased;
+}
