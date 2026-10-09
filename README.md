@@ -47,6 +47,10 @@ For local work against emulators: `npm run emulators` and `VITE_USE_EMULATORS=tr
 
 `mockup/` holds the first static UI mockup and is not deployed.
 
-## E2E tests
+## Testing
+
+**Every new feature or behaviour change must come with tests: unit tests (`src/**/*.test.ts`, `npm test`) for logic, and E2E tests (`tests/e2e`, `npm run test:e2e`) for user-facing flows, wherever they apply.** Changes to `firestore.rules` also need a case in `tests/rules.test.ts` (`npm run test:rules`). CI runs all three on every pull request and on pushes to `develop` and `main`.
+
+### E2E tests
 
 `npm run test:e2e` starts the Auth and Firestore emulators plus the Vite dev server and runs the Playwright flow in `tests/e2e` (needs Java). Locally run `npx playwright install chromium` once; in the Claude cloud env the preinstalled Chromium is used automatically (a SessionStart hook installs dependencies). CI runs the unit, rules and E2E tests on pushes to `develop` and `main` (`.github/workflows/tests.yml`).
