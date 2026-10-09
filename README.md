@@ -49,4 +49,4 @@ For local work against emulators: `npm run emulators` and `VITE_USE_EMULATORS=tr
 
 ## E2E tests
 
-`npm run test:e2e` starts the Auth and Firestore emulators plus the Vite dev server and runs the Playwright flow in `tests/e2e` (needs Java). Locally run `npx playwright install chromium` once; in the Claude cloud env the preinstalled Chromium is used automatically (a SessionStart hook installs dependencies). CI runs the rules and E2E tests on pushes to `develop` and `main` (`.github/workflows/e2e.yml`).
+`npm run test:e2e` starts the Auth and Firestore emulators plus the Vite dev server and runs the Playwright flow in `tests/e2e` (needs Java). Locally run `npx playwright install chromium` once; in the Claude cloud env the preinstalled Chromium is used automatically (a SessionStart hook installs dependencies). CI runs the unit, rules and E2E tests on pushes to `develop` and `main` (`.github/workflows/tests.yml`).
