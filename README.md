@@ -46,3 +46,7 @@ For local work against emulators: `npm run emulators` and `VITE_USE_EMULATORS=tr
    - Push: works with the default FCM key; set the function region in `functions/index.js` to match the database location.
 
 `mockup/` holds the first static UI mockup and is not deployed.
+
+## E2E tests
+
+`npm run test:e2e` starts the Auth and Firestore emulators plus the Vite dev server and runs the Playwright flow in `tests/e2e` (needs Java). Locally run `npx playwright install chromium` once; in the Claude cloud env the preinstalled Chromium is used automatically (a SessionStart hook installs dependencies). CI runs the rules and E2E tests on pushes to `develop` and `main` (`.github/workflows/e2e.yml`).
