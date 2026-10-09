@@ -10,8 +10,7 @@
     "test": "vitest run",
     "emulators": "firebase emulators:start --only auth,firestore,hosting",
     "test:rules": "firebase emulators:exec --only firestore \"vitest run --config vitest.rules.config.ts\"",
-    "test:e2e": "firebase emulators:exec --only auth,firestore --project komatal-e2e \"npm run e2e:run\"",
-    "e2e:run": "VITE_USE_EMULATORS=true vite --host 127.0.0.1 --port 5173 & sleep 6; node tests/e2e/flow.mjs; code=$?; kill %1; exit $code"
+    "test:e2e": "firebase emulators:exec --only auth,firestore --project komatal-e2e \"playwright test\""
   },
   "dependencies": {
     "@fontsource-variable/nunito": "^5.3.0",
@@ -24,11 +23,11 @@
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",
+    "@playwright/test": "~1.63",
     "@types/node": "^26.6.4",
     "@vitejs/plugin-vue": "^6.0.9",
     "fake-indexeddb": "^6.2.5",
     "firebase-tools": "^15.32.1",
-    "playwright-core": "^1.63.0",
     "typescript": "~5.9",
     "vite": "^8.3.3",
     "vitest": "^5.0.3",
