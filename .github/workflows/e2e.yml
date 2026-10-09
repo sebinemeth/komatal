@@ -2,6 +2,7 @@ name: E2E
 on:
   push:
     branches: [develop, main]
+  pull_request:
 jobs:
   e2e:
     runs-on: ubuntu-latest
